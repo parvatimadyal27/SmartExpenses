@@ -2,11 +2,15 @@ import type { Friend } from "../models/friend.model.js";
 export declare class FriendsController {
     private repository;
     constructor();
-    checkEmailExists(email: string): boolean;
-    checkPhoneExists(phone: string): boolean;
+    private normalizeEmail;
+    private normalizePhone;
+    checkEmailExists(email: string, excludeId?: string): boolean;
+    checkPhoneExists(phone: string, excludeId?: string): boolean;
     getFriendById(id: string): Friend | undefined;
     addFriend(friend: Friend): void;
+    updateFriend(id: string, updatedData: Partial<Friend>): Friend;
     searchFriend(query: string): Friend[];
     removeFriend(query: string): Friend[];
+    removeFriendById(id: string): boolean;
 }
 //# sourceMappingURL=friends.controller.d.ts.map
