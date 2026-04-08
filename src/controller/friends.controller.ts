@@ -41,10 +41,7 @@ export class FriendsController {
   }
 
   addFriend(friend: Friend) {
-    if (this.getFriendById(friend.id)) {
-      throw new ConflictError("Friend with this ID already exists", ["id"]);
-    }
-
+    //throw confilct error only if email or phone number already exists
     if (friend.email && this.checkEmailExists(friend.email)) {
       throw new ConflictError("Email already exists", ["email"]);
     }
@@ -56,7 +53,7 @@ export class FriendsController {
     this.repository.addFriend(friend);
   }
 
-  // ------------------- Update -------------------
+  // Update
 
   updateFriend(id: string, updatedData: Partial<Friend>) {
     const existing = this.getFriendById(id);
@@ -117,5 +114,9 @@ export class FriendsController {
 
     this.repository.removeFriendById(id);
     return true;
+  }
+
+  getAllFriends() {
+    return this.repository.getAllFriends();
   }
 }

@@ -1,1 +1,53 @@
-{"friends":[{"id":"1775537726656","name":"Robin","email":"robin@gmail.com","phone":"7412563249","balance":-911},{"id":"1775538102485","name":"ted","email":"ted.com","phone":"789654","balance":-100},{"id":"1775538367653","name":"Lilly","email":"Lilly@gmail.com","phone":"7412589633","balance":70},{"id":"1775538941354","name":"Stella","email":"","phone":"","balance":90},{"id":"1775547344099","name":"Victoria","email":"","phone":"","balance":-777},{"id":"1775562485023","name":"Parvati","email":"paru@gmail.com","phone":"1123123125","balance":0}]}
+{
+  "friends": [
+    {
+      "id": "1775537726656",
+      "name": "Robin",
+      "email": "robin@gmail.com",
+      "phone": "7412563249",
+      "balance": -911
+    },
+    {
+      "id": "1775538102485",
+      "name": "ted",
+      "email": "ted.com",
+      "phone": "789654",
+      "balance": -100
+    },
+    {
+      "id": "1775538367653",
+      "name": "Lilly",
+      "email": "Lilly@gmail.com",
+      "phone": "7412589633",
+      "balance": 70
+    },
+    {
+      "id": "1775538941354",
+      "name": "Stella",
+      "email": "",
+      "phone": "",
+      "balance": 90
+    },
+    {
+      "id": "1775547344099",
+      "name": "Victoria",
+      "email": "",
+      "phone": "7894561239",
+      "balance": -777
+    },
+    {
+      "id": "1775625380436",
+      "name": "Robin",
+      "email": "robin2@gmail.com",
+      "phone": "7894523691",
+      "balance": -99
+    },
+    {
+      "id": "1775625911477",
+      "name": "Barney",
+      "email": "barney@gmail.com",
+      "phone": "7823691236",
+      "balance": 99
+    }
+  ]
+}

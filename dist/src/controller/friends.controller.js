@@ -85,5 +85,8 @@ export class FriendsController {
         this.repository.removeFriendById(id);
         return true;
     }
+    getAllFriends() {
+        return this.repository.getAllFriends();
+    }
 }
 //# sourceMappingURL=friends.controller.js.map

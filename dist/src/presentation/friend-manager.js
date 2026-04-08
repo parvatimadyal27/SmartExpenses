@@ -1,4 +1,3 @@
-import { numberValidator } from "../core/validators/number.validator.js";
 import { openInterractionManager } from "./interaction-manager.js";
 import {} from "../models/friend.model.js";
 import { FriendsController } from "../controller/friends.controller.js";
@@ -9,7 +8,8 @@ const options = [
     { label: "Search Friend", value: "2" },
     { label: "Update Friend", value: "3" },
     { label: "Remove Friend", value: "4" },
-    { label: "Exit", value: "5" },
+    { label: "Display All Friends", value: "5" },
+    { label: "Exit", value: "6" },
 ];
 const { ask, choose, close } = openInterractionManager();
 //Validators
@@ -42,13 +42,24 @@ const printFriendsTable = (friends) => {
         "+" +
         "-".repeat(balanceWidth + 2) +
         "+";
-    console.log("\n📋 FRIENDS LIST\n");
+    console.log("\n FRIENDS LIST\n");
     console.log(line);
     console.log(`| ${pad("#", 2)} | ${pad("Name", nameWidth)} | ${pad("Email", emailWidth)} | ${pad("Phone", phoneWidth)} | ${pad("Balance", balanceWidth)} |`);
     console.log(line);
     friends.forEach((f, i) => {
-        const balance = f.balance > 0 ? `+${f.balance}` : f.balance < 0 ? `${f.balance}` : "0";
-        console.log(`| ${pad(String(i + 1), 2)} | ${pad(f.name, nameWidth)} | ${pad(f.email || "-", emailWidth)} | ${pad(f.phone || "-", phoneWidth)} | ${pad(balance, balanceWidth)} |`);
+        let balanceText = "";
+        if (f.balance > 0) {
+            balanceText = chalk.green("+" + f.balance);
+        }
+        else if (f.balance < 0) {
+            balanceText = chalk.red(String(f.balance));
+        }
+        else {
+            balanceText = chalk.yellow("0");
+        }
+        const rawBalance = f.balance > 0 ? "+" + f.balance : String(f.balance);
+        const paddedBalance = balanceText + " ".repeat(balanceWidth - rawBalance.length);
+        console.log(`| ${pad(String(i + 1), 2)} | ${pad(f.name, nameWidth)} | ${pad(f.email || "-", emailWidth)} | ${pad(f.phone || "-", phoneWidth)} | ${paddedBalance} |`);
     });
     console.log(line + "\n");
 };
@@ -119,55 +130,34 @@ const addFriend = async () => {
     const form = showFriendForm();
     await form.getValues();
 };
-// const addFriend = async () => {
-//   const name = await ask("Enter friend name:");
-//   const email = await ask("Enter friend email:");
-//   const phone = await ask("Enter friend phone:");
-//   const openingBalance = await ask(
-//     "Enter opening balance (positive for amount you are owed, negative for amount you owe):",
-//     { defaultAnswer: "0", validator: numberValidator },
-//   );
-//   if (friendsController.checkEmailExists(email!)) {
-//     console.log(`Email ${email} already exists.`);
-//     return;
-//   }
-//   if (friendsController.checkPhoneExists(phone!)) {
-//     console.log(`Phone ${phone} already exists.`);
-//     return;
-//   }
-//   const friend: Friend = {
-//     id: Date.now().toString(),
-//     name: name!,
-//     email: email!,
-//     phone: phone!,
-//     balance: Number(openingBalance),
-//   };
-//   try {
-//     await friendsController.addFriend(friend);
-//     console.log(`Friend added: ${name}, ${email}, ${phone}`);
-//   } catch (error) {
-//     if (error instanceof ConflictError) {
-//       console.log(`Conflict: ${error.message}`);
-//     } else {
-//       console.error("An unexpected error occurred.");
-//     }
-//   }
-// };
+//Search Friend
 const searchFriend = async () => {
-    const query = await ask("Enter name to search:");
+    console.log("\n--- Search Friend ---\n");
+    let query = "";
+    while (true) {
+        query = (await ask("Enter name, email, or phone to search:"))?.trim() || "";
+        if (query)
+            break;
+        console.log("Search query cannot be empty.");
+    }
     const results = friendsController.searchFriend(query);
-    if (results.length === 0) {
-        console.log("No friends found.");
+    if (!results || results.length === 0) {
+        console.log("No matching friends found.");
         return;
     }
-    console.log("Found friends:");
     printFriendsTable(results);
 };
+//Remove Friend
 const removeFriend = async () => {
-    console.log("\n--- Delete Friend ---\n");
-    const query = (await ask("Search friend to delete:"))?.trim();
-    if (!query)
-        return;
+    console.log(chalk.cyan.bold("\n--- Remove Friend ---\n"));
+    let query = "";
+    while (true) {
+        query =
+            (await ask("Enter name, email, or phone to search for deletion:"))?.trim() || "";
+        if (query)
+            break;
+        console.log("Search query cannot be empty.");
+    }
     const results = friendsController.searchFriend(query);
     if (!results || results.length === 0) {
         console.log("No matching friends found.");
@@ -193,15 +183,25 @@ const removeFriend = async () => {
     const removed = friendsController.removeFriendById(selected.id);
     console.log("\nFriend deleted successfully.\n");
 };
+//view all friends
+const viewAllFriends = async () => {
+    console.log(chalk.cyan.bold("\n --- All Friends ---\n"));
+    const friends = friendsController.getAllFriends();
+    if (!friends || friends.length === 0) {
+        console.log("No friends available.");
+        return;
+    }
+    printFriendsTable(friends);
+};
 //Update Friend
 const updateFriend = async () => {
-    console.log("\n--- Update Friend ---\n");
+    console.log(chalk.cyan.bold("\n--- Update Friend ---\n"));
     const query = (await ask("Search friend to update:"))?.trim();
     if (!query)
         return;
     const results = friendsController.searchFriend(query);
     if (!results || results.length === 0) {
-        console.log("❌ No matching friends found.");
+        console.log(chalk.red("No matching friends found."));
         return;
     }
     // Show results
@@ -210,31 +210,31 @@ const updateFriend = async () => {
     const index = Number(indexInput) - 1;
     const selected = results[index];
     if (!selected) {
-        console.log("Invalid selection.");
+        console.log(chalk.red("Invalid selection."));
         return;
     }
-    console.log(`\n✏️ Updating: ${selected.name}`);
-    console.log("👉 Leave empty to keep existing value\n");
+    console.log(chalk.yellow.bold(`\n---- Updating: ${selected.name}----`));
+    console.log(chalk.gray("----Leave empty to keep existing value----\n"));
     try {
-        // NAME
+        //NAME
         const name = (await ask(`Enter name (${selected.name}):`))?.trim() || "";
-        // EMAIL
+        //EMAIL
         let email = "";
         while (true) {
             email =
                 (await ask(`Enter email (${selected.email || "-"}):`))?.trim() || "";
             if (email === "" || emailValidator(email))
                 break;
-            console.log("Invalid email format");
+            console.log(chalk.red("Invalid email format"));
         }
-        // PHONE
+        //PHONE
         let phone = "";
         while (true) {
             phone =
                 (await ask(`Enter phone (${selected.phone || "-"}):`))?.trim() || "";
             if (phone === "" || phoneValidator(phone))
                 break;
-            console.log(" Phone must be exactly 10 digits");
+            console.log(chalk.red("Phone must be exactly 10 digits"));
         }
         // BALANCE
         let balanceInput = "";
@@ -243,7 +243,7 @@ const updateFriend = async () => {
                 (await ask(`Enter balance (${selected.balance}):`))?.trim() || "";
             if (balanceInput === "" || !isNaN(Number(balanceInput)))
                 break;
-            console.log("Balance must be a number");
+            console.log(chalk.red("Balance must be a number"));
         }
         // UPDATE
         const updated = friendsController.updateFriend(selected.id, {
@@ -252,15 +252,21 @@ const updateFriend = async () => {
             phone: phone || selected.phone,
             balance: balanceInput ? Number(balanceInput) : selected.balance,
         });
-        console.log("\nFriend updated successfully!\n");
-        console.log(`${updated.name} | ${updated.email || "-"} | ${updated.phone || "-"} | ${updated.balance}`);
+        console.log(chalk.green("\nFriend updated successfully!\n"));
+        const rawBalance = updated.balance > 0 ? "+" + updated.balance : String(updated.balance);
+        const coloredBalance = updated.balance > 0
+            ? chalk.green(rawBalance)
+            : updated.balance < 0
+                ? chalk.red(rawBalance)
+                : chalk.yellow(rawBalance);
+        console.log(`${chalk.cyan(updated.name)} | ${updated.email || "-"} | ${updated.phone || "-"} | ${coloredBalance}`);
     }
     catch (error) {
         if (error instanceof ConflictError) {
-            console.log(`Conflict: ${error.message}`);
+            console.log(chalk.red(`Conflict: ${error.message}`));
         }
         else {
-            console.log("Something went wrong.");
+            console.log(chalk.red("Something went wrong."));
         }
     }
 };
@@ -281,10 +287,14 @@ export const manageFriends = async () => {
                 await updateFriend();
                 break;
             case "4":
-                console.log("Removing friend...");
+                console.log(chalk.yellow.red("Removing friend..."));
                 await removeFriend();
                 break;
             case "5":
+                console.log(chalk.blue.bold("Displaying all friends..."));
+                await viewAllFriends();
+                break;
+            case "6":
                 console.log("Exiting...");
                 close();
                 return;

@@ -12,5 +12,6 @@ export declare class FriendsController {
     searchFriend(query: string): Friend[];
     removeFriend(query: string): Friend[];
     removeFriendById(id: string): boolean;
+    getAllFriends(): Friend[];
 }
 //# sourceMappingURL=friends.controller.d.ts.map

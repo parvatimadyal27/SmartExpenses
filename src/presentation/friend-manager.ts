@@ -1,4 +1,3 @@
-import { numberValidator } from "../core/validators/number.validator.js";
 import type { Choice } from "./interaction-manager.js";
 import { openInterractionManager } from "./interaction-manager.js";
 import { type Friend } from "../models/friend.model.js";
@@ -11,7 +10,8 @@ const options: Choice[] = [
   { label: "Search Friend", value: "2" },
   { label: "Update Friend", value: "3" },
   { label: "Remove Friend", value: "4" },
-  { label: "Exit", value: "5" },
+  { label: "Display All Friends", value: "5" },
+  { label: "Exit", value: "6" },
 ];
 
 const { ask, choose, close } = openInterractionManager();
@@ -61,7 +61,7 @@ const printFriendsTable = (friends: Friend[]) => {
     "-".repeat(balanceWidth + 2) +
     "+";
 
-  console.log("\n📋 FRIENDS LIST\n");
+  console.log("\n FRIENDS LIST\n");
   console.log(line);
 
   console.log(
@@ -81,8 +81,12 @@ const printFriendsTable = (friends: Friend[]) => {
       balanceText = chalk.yellow("0");
     }
 
+    const rawBalance = f.balance > 0 ? "+" + f.balance : String(f.balance);
+    const paddedBalance =
+      balanceText + " ".repeat(balanceWidth - rawBalance.length);
+
     console.log(
-      `| ${pad(String(i + 1), 2)} | ${pad(f.name, nameWidth)} | ${pad(f.email || "-", emailWidth)} | ${pad(f.phone || "-", phoneWidth)} | ${pad(balanceText, balanceWidth)} |`,
+      `| ${pad(String(i + 1), 2)} | ${pad(f.name, nameWidth)} | ${pad(f.email || "-", emailWidth)} | ${pad(f.phone || "-", phoneWidth)} | ${paddedBalance} |`,
     );
   });
 
@@ -171,58 +175,39 @@ const addFriend = async () => {
   await form.getValues();
 };
 
-// const addFriend = async () => {
-//   const name = await ask("Enter friend name:");
-//   const email = await ask("Enter friend email:");
-//   const phone = await ask("Enter friend phone:");
-//   const openingBalance = await ask(
-//     "Enter opening balance (positive for amount you are owed, negative for amount you owe):",
-//     { defaultAnswer: "0", validator: numberValidator },
-//   );
-//   if (friendsController.checkEmailExists(email!)) {
-//     console.log(`Email ${email} already exists.`);
-//     return;
-//   }
-//   if (friendsController.checkPhoneExists(phone!)) {
-//     console.log(`Phone ${phone} already exists.`);
-//     return;
-//   }
-
-//   const friend: Friend = {
-//     id: Date.now().toString(),
-//     name: name!,
-//     email: email!,
-//     phone: phone!,
-//     balance: Number(openingBalance),
-//   };
-//   try {
-//     await friendsController.addFriend(friend);
-//     console.log(`Friend added: ${name}, ${email}, ${phone}`);
-//   } catch (error) {
-//     if (error instanceof ConflictError) {
-//       console.log(`Conflict: ${error.message}`);
-//     } else {
-//       console.error("An unexpected error occurred.");
-//     }
-//   }
-// };
-
+//Search Friend
 const searchFriend = async () => {
-  const query = await ask("Enter name to search:");
-  const results: Friend[] = friendsController.searchFriend(query!);
-  if (results.length === 0) {
-    console.log("No friends found.");
+  console.log("\n--- Search Friend ---\n");
+  let query = "";
+  while (true) {
+    query = (await ask("Enter name, email, or phone to search:"))?.trim() || "";
+    if (query) break;
+    console.log("Search query cannot be empty.");
+  }
+
+  const results: Friend[] = friendsController.searchFriend(query);
+
+  if (!results || results.length === 0) {
+    console.log("No matching friends found.");
     return;
   }
-  console.log("Found friends:");
+
   printFriendsTable(results);
 };
 
+//Remove Friend
 const removeFriend = async () => {
-  console.log("\n--- Delete Friend ---\n");
+  console.log(chalk.cyan.bold("\n--- Remove Friend ---\n"));
 
-  const query = (await ask("Search friend to delete:"))?.trim();
-  if (!query) return;
+  let query = "";
+  while (true) {
+    query =
+      (
+        await ask("Enter name, email, or phone to search for deletion:")
+      )?.trim() || "";
+    if (query) break;
+    console.log("Search query cannot be empty.");
+  }
 
   const results: Friend[] = friendsController.searchFriend(query);
 
@@ -261,8 +246,21 @@ const removeFriend = async () => {
   console.log("\nFriend deleted successfully.\n");
 };
 
-//Update Friend
+//view all friends
+const viewAllFriends = async () => {
+  console.log(chalk.cyan.bold("\n --- All Friends ---\n"));
 
+  const friends = friendsController.getAllFriends();
+
+  if (!friends || friends.length === 0) {
+    console.log("No friends available.");
+    return;
+  }
+
+  printFriendsTable(friends);
+};
+
+//Update Friend
 const updateFriend = async () => {
   console.log(chalk.cyan.bold("\n--- Update Friend ---\n"));
 
@@ -293,10 +291,10 @@ const updateFriend = async () => {
   console.log(chalk.gray("----Leave empty to keep existing value----\n"));
 
   try {
-    // ---------------- NAME ----------------
+    //NAME
     const name = (await ask(`Enter name (${selected.name}):`))?.trim() || "";
 
-    // ---------------- EMAIL ----------------
+    //EMAIL
     let email = "";
     while (true) {
       email =
@@ -307,7 +305,7 @@ const updateFriend = async () => {
       console.log(chalk.red("Invalid email format"));
     }
 
-    // ---------------- PHONE ----------------
+    //PHONE
     let phone = "";
     while (true) {
       phone =
@@ -318,7 +316,7 @@ const updateFriend = async () => {
       console.log(chalk.red("Phone must be exactly 10 digits"));
     }
 
-    // ---------------- BALANCE ----------------
+    // BALANCE
     let balanceInput = "";
     while (true) {
       balanceInput =
@@ -329,7 +327,7 @@ const updateFriend = async () => {
       console.log(chalk.red("Balance must be a number"));
     }
 
-    // ---------------- UPDATE ----------------
+    // UPDATE
     const updated = friendsController.updateFriend(selected.id, {
       name: name || selected.name,
       email: email || selected.email,
@@ -378,10 +376,15 @@ export const manageFriends = async () => {
         await updateFriend();
         break;
       case "4":
-        console.log("Removing friend...");
+        console.log(chalk.yellow.red("Removing friend..."));
         await removeFriend();
         break;
       case "5":
+        console.log(chalk.blue.bold("Displaying all friends..."));
+        await viewAllFriends();
+        break;
+
+      case "6":
         console.log("Exiting...");
         close();
         return;
